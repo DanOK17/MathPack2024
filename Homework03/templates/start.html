@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Application</title>
+    <style>
+        #message-window {
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        #message-input {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat Application</h1>
+    <a href="/status" target="_blank">
+        <button>Status</button>
+    </a>
+    <div id="message-window"></div>
+    <input type="text" id="message-input" placeholder="Enter your message...">
+    <input type="file" id="file-input">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        const messageWindow = document.getElementById('message-window');
+        const messageInput = document.getElementById('message-input');
+        let userName = '';
+        let lastMessageTime = 0;
+
+        function sendMessage() {
+            const messageText = messageInput.value.trim();
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            const emojiSelect = document.getElementById('emoji-select');
+            const selectedEmoji = emojiSelect.value;
+
+            if (messageText !== '' || selectedEmoji !== '') {
+                if (!userName) {
+                    userName = prompt('Enter your name:');
+                }
+
+                const formData = new FormData();
+                formData.append('name', userName);
+                formData.append('text', `${messageText} ${selectedEmoji}`);
+                if (file) {
+                    formData.append('file', file);
+                }
+
+                // Add progress indicator
+                const progressIndicator = document.createElement('div');
+                progressIndicator.textContent = file ? 'Uploading file...' : 'Sending message...';
+                messageWindow.appendChild(progressIndicator);
+
+                fetch('/send', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ok) {
+                        messageInput.value = '';
+                        fileInput.value = ''; // Reset file input
+                        progressIndicator.remove(); // Remove progress indicator
+                        fetchMessages();
+                    } else {
+                        console.error('Error sending message:', data.error);
+                        progressIndicator.remove();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    progressIndicator.remove();
+                });
+            }
+        }
+
+        function fetchMessages() {
+            fetch(`/messages?after=${lastMessageTime || 0}`)
+                .then(response => response.json())
+                .then(data => {
+                    const messages = data.messages;
+                    messages.forEach(print_message);
+                    if (messages.length > 0) {
+                        lastMessageTime = messages[messages.length - 1].time;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function displayMessages(messages) {
+            messages.forEach(print_message);
+        }
+
+        function print_message(message) {
+            const t = message['time'];
+            const dt = new Date(t * 1000);
+            const messageText = `${dt.toLocaleString()} ${message['name']}: ${message['text']}`;
+            const messageElement = document.createElement('div');
+            messageElement.innerHTML = messageText; // Use innerHTML to display emojis correctly
+            messageElement.style.color = message['color'];
+            messageWindow.appendChild(messageElement);
+
+            if (message['file']) {
+                const fileLink = document.createElement('a');
+                fileLink.href = `/files/${message['file']}`;
+                fileLink.textContent = 'Download File';
+                fileLink.download = message['file'];
+                messageWindow.appendChild(fileLink);
+            }
+
+            messageWindow.scrollTop = messageWindow.scrollHeight;
+        }
+
+        fetchMessages();
+        setInterval(fetchMessages, 1000);
+    </script>
+    <select id="emoji-select">
+        <option value="">Select Emoji</option>
+        <option value="😀">😀</option>
+        <option value="😃">😃</option>
+        <option value="😄">😄</option>
+        <!-- Add more emoji options as needed -->
+    </select>
+</body>
+</html>

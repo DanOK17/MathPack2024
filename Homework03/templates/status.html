@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Status</title>
+</head>
+<body>
+    <h1>Status</h1>
+    <p>First Name: {{ firstName }}</p>
+    <p>Last Name: {{ lastName }}</p>
+    <p>Address: {{ address.streetAddress }}, {{ address.city }}, {{ address.postalCode }}</p>
+    <p>Phone Numbers:</p>
+    <ul>
+        {% for number in phoneNumbers %}
+        <li>{{ number }}</li>
+        {% endfor %}
+    </ul>
+    <p>All users:</p>
+    <ul>
+    {% for user in users %}
+        <li>{{ user }}</li>
+    {% endfor %}
+    </ul>
+    <p>Number of Users: {{ numUsers }}</p>
+    <p>Number of Messages: {{ numMessages }}</p>
+</body>
+</html>
